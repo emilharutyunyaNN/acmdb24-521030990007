@@ -1,0 +1,231 @@
+For lab1 I editted/created the files below:
+Editted
+- Tuple.java
+  - each tuple has: tupledesc,recordId, field valu
+  - operation over a tuple: creating tuple with a tupledesc, getting recordId, setting field etc. (all can be done just by using the attributes) 
+  - Functionality:
+
+	Allows for the creation and manipulation of tuples with specified schemas.
+	Enables access to and modification of tuple fields.
+	Provides methods to set and retrieve the tuple's record ID.
+	Supports iteration over the fields of the tuple.
+	Allows for resetting the schema of the tuple.
+	Provides a string representation of the tuple suitable for output.
+
+- TupleDesc.java
+  - TDItem class:
+	A nested class within TupleDesc that represents the schema of each field in a tuple. It has a field type and field name.
+  - Fields:
+	fieldList: A list of TDItem objects representing the fields in the tuple.
+  - Constructors:
+	TupleDesc with an empty field list.
+	TupleDesc with specified types and field names.
+	TupleDesc with specified types and anonymous (unnamed) fields.
+  - Methods:
+
+        An iterator over the TDItem objects in the field list.
+	Number of fields in the tuple.
+	Removing the field at the specified index i.
+	The name of the field at index i.
+	The type of the field at index i.
+	The index of the field with the specified name.
+	The size of tuples corresponding to this TupleDesc in bytes.
+	Merging two TupleDesc objects into one.
+	Comparing this TupleDesc with another object for equality.
+	Computing the hash code for this TupleDesc.
+	A string describing this TupleDesc.
+  - Functionality:
+	Manages the schema of tuples by storing information about field types and names.
+	Allows for the creation, modification, and retrieval of tuple schema information.
+	Supports operations such as merging two TupleDesc objects and comparing them for equality.
+
+- Catalog.java
+  - Fields:
+	idItemMap: Implemented as a HashMap with table IDs as keys and corresponding CatalogItem objects as values. This allows quick lookup of tables based on their IDs.
+	nameIdMap: Also implemented as a HashMap, storing table names as keys and their corresponding IDs as values. This facilitates efficient retrieval of table IDs by name.
+  - Inner Class:
+	CatalogItem: Represents an item in the catalog, encapsulating a DbFile object, table name, and primary key field name. This inner class aids in organizing and encapsulating information about each table.
+  - Methods:
+
+  	addTable : adds a new table to the catalog with the specified file, name, and primary key field. This method updates both the idItemMap and nameIdMap.
+	       Overloaded version of addTable, allowing addition of tables without specifying a primary key field.
+	       Overloaded version of addTable, generates a random name for the table and adds it to the catalog.
+	getTableId : retrieves the ID of the table with the specified name from the nameIdMap.
+	getTupleDesc : returns the tuple descriptor (schema) of the specified table by fetching it from the corresponding CatalogItem.
+	getDatabaseFile : retrieves the DbFile associated with the specified table ID from the idItemMap.
+	getPrimaryKey : retrieves the primary key field name of the specified table from its corresponding CatalogItem.
+	tableIdIterator : provides an iterator over the table IDs stored in the idItemMap.
+	getTableName: retrieves the name of the table with the specified ID from the corresponding CatalogItem.
+	clear : clears all tables from the catalog by clearing both the idItemMap and nameIdMap.
+	loadSchema : reads schema information from a file, parses it, and creates tables accordingly. It populates the catalog by adding tables using the addTable method.
+  - Functionality:
+	Table Management: Manages tables in the database by storing their schemas and associated metadata.
+	Table Addition: Allows adding tables to the catalog with various configurations, such as file, name, and primary key field.
+	Table Retrieval: Provides methods to retrieve information about tables, such as IDs, names, schemas, and primary keys.
+	Thread Safety: Ensures thread safety with the @Threadsafe annotation, allowing safe concurrent access to catalog methods.
+	Catalog Population: Supports loading schema information from a file and creating tables accordingly, facilitating the initialization of the catalog with pre-defined schema information.
+
+- BufferPool.java
+  - Fields:
+
+	pageSize: Represents the size of a page, including the header.
+	numPages: Maximum number of pages that can be cached in the buffer pool.
+	pages: An instance of the LRUCache class used to store pages in the buffer pool.
+	pageTransactions: Maps transaction IDs to the set of page IDs they have accessed.
+	lockManager: An instance of the LockManager class for managing locks on pages.
+  - Constructor:
+
+	Initializes the buffer pool with the specified number of pages.
+	Initializes the pageTransactions and lockManager.
+  - Methods:
+
+	getPage : Retrieves a page with the specified ID for the given transaction, granting appropriate locks and handling caching.
+	releasePage : Releases the lock on a page (not implemented).
+	transactionComplete : Completes the transaction and releases its locks (not implemented).
+	holdsLock : Checks if the specified transaction holds a lock on the page (not implemented).
+	transactionComplete : Completes the transaction based on the commit flag (not implemented).
+	insertTuple : Inserts a tuple into the specified table on behalf of the transaction (not implemented).
+	deleteTuple : Deletes a tuple from the buffer pool (not implemented).
+	flushAllPages : Flushes all dirty pages to disk (not implemented).
+	discardPage : Removes the specified page from the buffer pool (not implemented).
+	flushPage : Flushes a specific page to disk (not implemented).
+	flushPages : Writes all pages associated with the transaction to disk (not implemented).
+	evictPage : Evicts a page from the buffer pool (not implemented).
+Created
+- LockManager.java
+  - Fields:
+
+	Various HashMaps for storing information about locks, shared pages, exclusive pages, and transaction threads.
+  - Constructor:
+
+	Initializes the HashMap fields.
+  - Methods:
+
+	holdsLock : Checks if the specified transaction holds a lock on the page.
+	addLock : Adds a lock for the specified transaction and page with the given permissions.
+	abortReadLocks : Aborts read locks held by transactions on a page (not implemented).
+	grantLock : Grants a lock to the specified transaction on the given page with the specified permissions.
+	requestLock : Requests a lock for the specified transaction on the given page with the specified permissions.
+	releaseLock : Releases locks associated with the given transaction and page.
+	removePage : Releases locks associated with the specified page (not implemented).
+	releaseAllPages : Releases all locks associated with the given transaction.
+- LRUCache.java
+  - Fields:
+
+	capacity: Maximum capacity of the cache.
+	map: LinkedHashMap to store cached elements.
+  - Constructor:
+
+	Initializes the cache with the specified capacity.
+  - Methods:
+
+	containsKey : Checks if the cache contains the specified key.
+	get : Retrieves the element corresponding to the key from the cache, updating its position as the most recently used.
+	evict : Evicts the least recently used element from the cache.
+	put : Puts an element into the cache, evicting the least recently used if the cache is at capacity.
+	Other utility methods for size, key set, values, and removal.
+Editted
+- HeapPageId.java
+  - Constructor:
+
+	HeapPageId(int tableId, int pgNo): Constructs a HeapPageId object for a specific page of a specific table.
+  - Accessors:
+
+	getTableId(): Retrieves the table ID associated with this HeapPageId.
+	pageNumber(): Retrieves the page number in the table associated with this HeapPageId.
+  - Hashing and Equality:
+
+	hashCode(): Generates a hash code for this HeapPageId, which is the concatenation of the table number and the page number. Useful when using HeapPageId as a key in hash tables, such as the BufferPool.
+	equals(Object o): Compares this HeapPageId with another object to check if they are equal, based on table ID and page number.
+  - Serialization:
+
+	serialize(): Returns a representation of this object as an array of integers, suitable for writing to disk. The array contains the table ID and page number.
+- RecordID.java
+  - Initialization: When creating a RecordId, you provide a PageId that represents the page where the tuple resides, along with the tuple number within that page. This initializes a unique identifier for that tuple.
+  - Accessing Tuple Number and Page ID: The RecordId provides methods to retrieve both the tuple number and the PageId associated with it. These methods (tupleno() and getPageId()) allow you to access the tuple number and page identifier respectively.
+  - Equality Comparison: The equals(Object o) method allows you to compare two RecordId instances for equality. Two RecordId objects are considered equal if they refer to the same tuple, i.e., they have the same tuple number and PageId.
+  - Hash Code Generation: The hashCode() method generates a hash code for a RecordId object based on its tuple number and PageId. This ensures that equal RecordId instances have the same hash code, facilitating their use in hash-based data structures.
+- HeapPage.java
+  - Fields:
+	pid: The page ID associated with this page.
+	td: The tuple descriptor describing the schema of tuples stored on this page.
+	header: An array of bytes representing the header of the page, indicating which slots are in use.
+	tuples: An array of Tuple objects representing the tuples stored on this page.
+	numSlots: The number of slots (tuples) that can be stored on this page.
+	oldData: A byte array representing the contents of the page before it was modified.
+	dirtyTid: The transaction ID of the transaction that last dirtied this page.
+	dirty: A boolean flag indicating whether this page is dirty (has been modified).
+  - Constructor:
+	Initializes the pid, td, numSlots, header, and tuples fields based on the provided page ID and byte data.
+	Parses the byte data to populate the tuples on the page.
+  - Methods:
+	getNumTuples(): Computes the number of tuples that can be stored on this page based on its size and the tuple size.
+	getHeaderSize(): Computes the number of bytes in the header of the page.
+	getBeforeImage(): Returns a copy of the page before it was modified.
+	setBeforeImage(): Sets the byte array representing the page's contents before modification.
+	getId(): Returns the page ID associated with this page.
+	getPageData(): Serializes the page to a byte array.
+	createEmptyPageData(): Static method to generate a byte array for an empty page.
+	deleteTuple(Tuple t): Deletes the specified tuple from the page.
+	insertTuple(Tuple t): Inserts the specified tuple into the page.
+	markDirty(boolean dirty, TransactionId tid): Marks the page as dirty and records the transaction ID that dirtied it.
+	isDirty(): Returns the transaction ID of the transaction that last dirtied this page.
+	getNumEmptySlots(): Returns the number of empty slots on this page.
+	isSlotUsed(int i): Returns true if the specified slot on this page is filled.
+	markSlotUsed(int i, boolean value): Abstraction to fill or clear a slot on this page.
+	iterator(): Returns an iterator over all tuples on this page.
+  - Functionality: 
+	Tuple Management: insert and delete
+	Page State Management: mark dirty, check if dirty, get image set image
+	Slot Management
+	Serialization and Deserialization
+	Iterator
+	Exception Handling
+	Performance Optimization
+- HeapFile.java
+  - Fields:
+	file: Represents the file backing this HeapFile on disk.
+	tupleDesc: Describes the schema of tuples stored in this file.
+  - Constructor:
+	Initializes the file and tupleDesc fields.
+  - Methods:
+	getFile(): Returns the file backing this HeapFile on disk.
+	getId(): Returns a unique ID identifying this HeapFile.
+	getTupleDesc(): Returns the TupleDesc of the table stored in this HeapFile.
+	readPage(PageId pid): Reads a page from disk and returns it.
+	writePage(Page page): Writes a page to disk (not implemented).
+	numPages(): Returns the number of pages in this HeapFile.
+	insertTuple(TransactionId tid, Tuple t): Inserts a tuple into the file (not implemented).
+	deleteTuple(TransactionId tid, Tuple t): Deletes a tuple from the file (not implemented).
+	iterator(TransactionId tid): Returns an iterator over all tuples in this file.
+  - Inner Class: HeapFileIterator
+	Implements the DbFileIterator interface for iterating over tuples in the file.
+	
+	Fields:
+
+		tid: Transaction ID of the requesting transaction.
+		pageCounter: Counter for tracking the current page being iterated.
+		tableId: ID of the HeapFile.
+		numPages: Number of pages in the file.
+		page: Current page being iterated.
+		tuples: Iterator over tuples in the current page.
+		pid: HeapPageId representing the current page ID.
+	Constructor:
+
+		Initializes fields with the provided parameters.
+	Methods:
+
+		open(): Opens the iterator for iteration.
+		hasNext(): Checks if there's a next tuple in the file.
+		next(): Retrieves the next tuple in the file.
+		rewind(): Rewinds the iterator to the start of the file.
+		close(): Closes the iterator.
+- SeqScan.java
+  - Initialization: The constructor SeqScan(TransactionId tid, int tableid, String tableAlias) creates a sequential scan instance over the specified table within the context of the given transaction. It requires the transaction ID, table ID, and optionally a table alias.
+  - Table and Alias Information: Methods getTableName() and getAlias() allow retrieval of the actual table name and the alias assigned to the table for this scan, respectively. The alias is essential for disambiguating field names when multiple tables are involved in a query.
+  - Resetting Table and Alias: The reset(int tableid, String tableAlias) method allows resetting the table ID and table alias associated with this scan.
+  - Opening, Closing, and Rewinding: open(), close(), and rewind() methods respectively initialize, close, and reset the iterator associated with the sequential scan. Opening prepares the scan for tuple retrieval, closing releases associated resources, and rewinding resets the iterator to the beginning of the table.
+  - Tuple Description: The getTupleDesc() method constructs a TupleDesc object with field names from the underlying table's TupleDesc, prefixed with the table alias provided during initialization. This is useful for distinguishing fields when joining tables with similar field names.
+  - Tuple Retrieval: hasNext() and next() methods allow iteration over the tuples returned by the scan. hasNext() checks if there are more tuples available, and next() retrieves the next tuple in the scan sequence.
+
+
