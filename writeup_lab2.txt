@@ -1,0 +1,71 @@
+Here I will explain the implementations of the methods added on lab1
+-- BufferPool.flushPage() - The flushPage() method in the BufferPool class is responsible for flushing a specific page to disk.
+    It takes a PageId object as its parameter, indicating the ID of the page to be flushed to disk. It throws an IOException in case of any errors during the flushing process.
+    First, the method retrieves the page corresponding to the given PageId from the buffer pool.
+    It checks if the retrieved page is marked as dirty, meaning it has been modified since it was last written to disk.
+    If the page is dirty, it proceeds to flush the page to disk. It gets the table ID associated with the page and retrieves the appropriate database file (DbFile) from the catalog using the table ID.
+    Before writing the page to disk, the method appends an update record to the log. This log record contains the before-image and after-image of the page to support recovery mechanisms. It ensures that any changes made to the page are logged in case of system failure.
+    After logging the write operation, the method calls the writePage() method of the database file to actually write the page to disk.
+    Once the page has been successfully written to disk, it marks the page as not dirty by calling markDirty(false, null). This indicates that the page is now consistent with the disk version and does not need to be written again unless it is modified.
+    The method is synchronized to ensure that only one thread can flush a page at a time, preventing concurrent modification of the same page.
+
+-- BTreeFile.findLeafPage() - It is responsible for locating and returning the leaf page of a B+ tree corresponding to a given key field.
+    If the given pid corresponds to a leaf page (BTreePageId.LEAF), the method locks the page and returns it. This means the search has reached the leaf level of the B+ tree, and the leaf page containing the desired key is found.
+    If the pid corresponds to an internal page (BTreePageId.INTERNAL), the method retrieves the page and iterates over its entries to find the appropriate child page to search next.
+    he method iterates over the entries of the internal page using an iterator. For each entry, it compares the key with the given field f.
+    If the key is greater than or equal to f, it recursively searches the left child page, as the desired key is guaranteed to be in the subtree rooted at the left child. This continues until a leaf page is reached.
+    If no entry is found on the page, it throws a DbException, indicating that there are no entries on the page, which should not occur in a well-formed B+ tree.
+    Finally, the method recursively calls itself to continue the search on the appropriate child page based on the found entry.
+
+-- BTreeFile.splitLeafPage() - The method splits the leaf page by adding a new page on the right side of the existing page and moving half of the tuples to the new page. It ensures that the tuples are split evenly between the old and new pages.
+    It creates a new empty leaf page using the getEmptyPage method.
+    It iterates over the tuples in the old leaf page, moving the second half of the tuples to the new page.
+    It copies the middle key into the parent page and recursively splits the parent page if necessary to accommodate the new entry. It inserts a new entry containing the middle key and pointers to the old and new pages into the parent page.
+    It updates the parent pointers of the new page and the sibling pointers of all affected leaf pages to maintain the B+ tree structure.
+    Finally, it returns the leaf page where the new tuple should be inserted based on the comparison of the middle key with the given field.
+
+-- BTreeFile.splitInternalPage() - The method splits the internal page by adding a new page to the right of the existing page and moving half of the entries to the new page. It ensures that the entries are split evenly between the old and new pages.
+     It creates a new empty internal page using the getEmptyPage method.
+     It iterates over the entries in the old internal page, moving the second half of the entries to the new page.
+     It pushes the last key from the old page up into the parent page. This ensures that the parent page maintains the correct key-value mapping for the internal nodes of the B+ tree.
+     It updates the parent pointers of the new page and the affected child pages to maintain the B+ tree structure.
+     Finally, it returns the internal page where the new entry should be inserted based on the comparison of the last key with the given field.
+
+-- BTreeFile.stealFromLeafPage() - It  is responsible for redistributing tuples between two leaf pages when one of them becomes less than half full due to deletion or update operations.
+    It calculates the total number of tuples between page and sibling. Then, it determines the number of tuples needed to be moved to page so that both pages have roughly equal number of tuples.
+    It iterates over the tuples in sibling and moves them to page until the required number of tuples has been moved.
+    After moving the tuples, it updates the corresponding entry in the parent internal page to reflect the new key value. This ensures that the parent's keys remain consistent with the contents of the leaf pages.
+    If isRightSibling is true, it ensures that the entry's key is updated to the key of the last tuple moved from the sibling.
+
+-- BTreeFile.stealFromLeftInternalPage() - It is responsible for redistributing entries between an internal page and its left sibling internal page when the internal page becomes less than half full due to deletion or update operations. 
+    It calculates the total number of entries between leftSibling and page. Then, it determines the number of entries needed to be moved to page so that both pages have roughly equal numbers of entries.
+    It finds the left child for the new entry from the last child in the leftSibling, and the right child for the new entry from the first child in the page.
+    It copies the first key from the parent to page and inserts it as a new entry.
+    It iterates over the entries in leftSibling and moves them to page until the required number of entries has been moved.
+    After moving the entries, it updates the corresponding entry in the parent internal page to reflect the new key value. This ensures that the parent's keys remain consistent with the contents of the internal pages.
+    It updates the parent pointers of the children pages affected by the redistribution.
+
+-- BTreeFile.stealFromRightInternalPage() - After moving the entries from the right sibling to the page, the last key from the right sibling is used to update the parent entry. This key becomes the new separator between the affected internal pages.
+    By updating the parent entry, the B+ tree structure ensures that the parent's keys accurately represent the range of keys contained within each child page.
+    Additionally, the method ensures that the parent pointers of all children in the entries that were moved are updated to point to the correct parent page. This step is essential for maintaining the integrity of the B+ tree's hierarchical structure.
+
+-- BTreeFile.mergeLeafPages() - The primary goal is to merge the contents of the right leaf page into the left leaf page.
+    After moving all tuples from the right page to the left page, the method updates the sibling pointers to reflect the merge operation.
+    It deletes the entry in the parent internal page corresponding to the two leaf pages that are merging. This ensures that the parent's keys and pointers are adjusted to reflect the removal of the merged pages.
+    Finally, it marks the right page as available for reuse.
+    A better breakdown:
+        Uses deleteParentEntry to remove the entry in the parent internal page that corresponds to the merging leaf pages. This step ensures that the parent's structure is updated to reflect the merge operation.
+        Iterates over all tuples in the right leaf page and moves them to the left leaf page using deleteTuple and insertTuple operations.
+        Updates the sibling pointers of the left leaf page to maintain the linked list structure of leaf pages. Also, updates the left sibling pointer of the right sibling if it exists.
+        Marks the right leaf page as available for reuse by calling setEmptyPage.
+
+-- BTreeFile.mergeInternalPages() - The main objective is to merge the contents of the right internal page into the left internal page.
+    After moving all entries from the right page to the left page, the method updates the parent pointers of the children in the entries that were moved.
+    It deletes the entry in the parent internal page corresponding to the two internal pages that are merging. This ensures that the parent's keys and pointers are adjusted to reflect the removal of the merged pages.
+    Finally, it marks the right page as available for reuse.
+    A better breakdown:
+        Use deleteParentEntry to remove the entry in the parent internal page that corresponds to the merging internal pages. This step ensures that the parent's structure is updated to reflect the merge operation.
+        Retrieve the last entry in the left internal page. This entry will be used to determine the right child pointer for the new entry corresponding to the parent's deleted entry.
+        Insert a new entry into the left page corresponding to the parent's deleted entry. Then, iterate over all entries in the right page and move them to the left page using insertEntry and deleteKeyAndLeftChild operations.
+        Update the parent pointers of the children in the entries that were moved to the left page using updateParentPointers.
+        Mark the right internal page as available for reuse by calling setEmptyPage.
