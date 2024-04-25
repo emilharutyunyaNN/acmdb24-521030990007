@@ -42,8 +42,9 @@ public class HeapPageId implements PageId {
      */
     public int hashCode() {
         // some code goes here
-    	String hash = String.valueOf(tableId)+String.valueOf(pageNo);
-    	return hash.hashCode();
+    	//String hash = String.valueOf(tableId)+String.valueOf(pageNo);
+    	//return hash.hashCode();
+    	return tableId + pageNo * 1000; 
         //throw new UnsupportedOperationException("implement this");
     }
 
@@ -56,15 +57,23 @@ public class HeapPageId implements PageId {
      */
     public boolean equals(Object o) {
         // some code goes here
-    	if(o == null || !o.getClass().equals(this.getClass()))
-    		return false;
-    	HeapPageId heapPageId = (HeapPageId) o;
-    	if(heapPageId.tableId != this.tableId)
-    		return false;
-    	if(heapPageId.pageNo!=this.pageNo)
-    		return false;
+    	//if(o == null || !o.getClass().equals(this.getClass()))
+    		//return false;
+    	//HeapPageId heapPageId = (HeapPageId) o;
+    	//if(heapPageId.tableId != this.tableId)
+    	//	return false;
+    	//if(heapPageId.pageNo!=this.pageNo)
+    	//	return false;
     	
-        return true;
+       // return true;
+    	if(o == null) { return false; }
+        if(o.getClass() == this.getClass()) {
+     	   HeapPageId id = (HeapPageId) o;
+     	   if(id.pageNo == this.pageNo && id.tableId == this.tableId) {
+     		   return true;
+     	   }
+        }
+        return false;
     }
 
     /**

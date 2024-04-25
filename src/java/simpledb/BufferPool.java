@@ -1,6 +1,7 @@
 package simpledb;
 
 import java.io.*;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -183,6 +184,32 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
+    	//DbFile file = Database.getCatalog().getDatabaseFile(tableId);
+    	//ArrayList<Page> pageList = file.insertTuple(tid, t);
+    	//for(Page page: pageList) {
+    		//page.markDirty(true, tid);
+    		//pages.put(page.getId(), page);
+    		//pageTransactions.get(tid).add(page.getId());
+    	//}
+    	DbFile tableFile = Database.getCatalog().getDatabaseFile(tableId);
+    	ArrayList<Page> dirtyPages = tableFile.insertTuple(tid, t);
+    	System.out.println("Received " + dirtyPages.size() + " dirty pages.");
+    	synchronized(this) {
+    		for(Page p : dirtyPages) {
+    			p.markDirty(true, tid);
+    			System.out.println("Putting page " + p.getId().toString());
+    			if(pages.get(p.getId()) != null) {
+    				pages.put(p.getId(), p);
+    			}
+    			else {
+    				if(pages.size() > numPages) {
+    					evictPage();
+    				}
+    				pages.put(p.getId(), p);
+    				
+    			}
+    		}
+    	}
     }
 
     /**
@@ -202,6 +229,34 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
+    	//int tableId = t.getRecordId().getPageId().getTableId();
+    	//DbFile file = Database.getCatalog().getDatabaseFile(tableId);
+    	//ArrayList<Page> page = file.deleteTuple(tid, t);
+    	//for(Page pg: page) {
+    		//pg.markDirty(true, tid);
+    		//pages.put(pg.getId(), pg);
+    		//pageTransactions.get(tid).add(pg.getId());
+    	//}
+    	DbFile tableFile = Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId());
+    	ArrayList<Page> dirtyPages = tableFile.deleteTuple(tid, t);
+
+    	synchronized(this) {
+    		for(Page p : dirtyPages) {
+    			System.out.println("Performing delete on page id " + p.getId().toString());
+    			p.markDirty(true, tid);
+    			if(pages.get(p.getId()) != null) {
+    				pages.put(p.getId(), p);
+    			}
+    			else {
+    				if(pages.size() > numPages) {
+    				evictPage();
+    				}
+    				pages.put(p.getId(), p);
+				
+    			}
+    		}
+    	}
+    	
     }
 
     /**
@@ -212,6 +267,14 @@ public class BufferPool {
     public synchronized void flushAllPages() throws IOException {
         // some code goes here
         // not necessary for lab1
+    	for(TransactionId tid: pageTransactions.keySet()) {
+    		for(PageId pid: pageTransactions.get(tid)) {
+    			Page page = pages.get(pid);
+    			if(page.isDirty() != null)
+    				this.flushPage(page.getId());
+    		}
+    		
+    	}
 
     }
 
@@ -226,6 +289,7 @@ public class BufferPool {
     public synchronized void discardPage(PageId pid) {
         // some code goes here
         // not necessary for lab1
+    	this.pages.remove(pid);
     }
 
     /**
@@ -235,6 +299,39 @@ public class BufferPool {
     private synchronized  void flushPage(PageId pid) throws IOException {
         // some code goes here
         // not necessary for lab1
+    	//DbFile dbFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
+        //dbFile.writePage(pages.get(pid));
+        //pages.get(pid).markDirty(false, null);
+    	//HeapPage p = (HeapPage) pages.get(pid);
+    	//TransactionId tid = p.isDirty();
+    	//if(tid != null) {
+    	//	int tableId = p.getId().getTableId();
+    	//	HeapFile hf = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
+    	//	hf.writePage(p);
+    	//	p.markDirty(false, tid);
+    	//}
+    	Page pToFlush = pages.get(pid);
+    	if (pToFlush.isDirty() != null) {
+    		int tableId = pid.getTableId();
+        	
+        	// write page to disk
+            Catalog c = Database.getCatalog();
+            DbFile f = c.getDatabaseFile(tableId);
+            
+            // append an update record to the log, with 
+            // a before-image and after-image.
+            TransactionId dirtier = pToFlush.isDirty();
+            if (dirtier != null) {
+            	Database.getLogFile().logWrite(dirtier,
+            			pToFlush.getBeforeImage(), pToFlush);
+            	Database.getLogFile().force();
+            }
+            
+            // write page
+            f.writePage(pToFlush);
+            pToFlush.markDirty(false, null);
+    	}
+    
     }
 
     /** Write all pages of the specified transaction to disk.
@@ -251,6 +348,17 @@ public class BufferPool {
     private synchronized  void evictPage() throws DbException {
         // some code goes here
         // not necessary for lab1
+    	try{
+            Page page = pages.evict();
+            // Check if no non-dirty page is in cache
+            if(page == null)
+                throw new DbException("NOSTEAL: No non-dirty page found for eviction.");
+            if(page.isDirty() != null)
+                flushPage(page.getId());
+            lockManager.removePage(page.getId());
+        }catch (IOException ioe){
+            throw new DbException("IOException: " + ioe.getMessage());
+        }
     }
 
 }
