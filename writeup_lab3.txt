@@ -1,0 +1,260 @@
+For Lab3 I editted
+- Predicate
+    Predicate class encapsulates the logic for comparing tuples based on specific criteria defined by the field number, 
+    comparison operation, and operand. It provides a flexible and reusable mechanism for filtering tuples in SimpleDB operations.
+    Constants Enum (Op):
+        Here it has defined comparison operations such as EQUALS, GREATER_THAN, LESS_THAN, LESS_THAN_OR_EQ, GREATER_THAN_OR_EQ, LIKE, and NOT_EQUALS.
+        It provides a method (getOp(int i)) to access operations by integer value for command-line convenience.
+        Also it overrides toString() to return a string representation of each operation.
+    Instance Variables:
+        field: The field number of passed-in tuples to compare against.
+        op: The operation to use for comparison (e.g., EQUALS, GREATER_THAN).
+        operand: The field value to compare passed-in tuples to.
+    Constructor:
+        It initializes the Predicate with the field number, comparison operation, and operand.
+    Getter Methods:
+        getField(): Returns the field number.
+        getOp(): Returns the comparison operation.
+        getOperand(): Returns the operand.
+        filter() Method:
+            Compares the field number of a tuple specified in the constructor to the operand field using the operator specified in the constructor.
+            Uses the compare() method of the Field class to perform the comparison.
+            Returns true if the comparison is true, false otherwise.
+        toString() Method:
+            Overrides the toString() method to provide a string representation of the Predicate object.
+            Returns a string containing the field ID, operation, and operand.
+- JoinPredicate
+    The JoinPredicate class provides a mechanism for defining join conditions between tuples in SimpleDB. 
+    It encapsulates the logic for comparing specific fields of two tuples based on a given predicate operation, 
+    enabling efficient join operations in database queries.
+    Instance Variables:
+        field1: The field index into the first tuple in the predicate.
+        field2: The field index into the second tuple in the predicate.
+        op: The operation to apply, represented by an instance of the Predicate.Op enum (GREATER_THAN, LESS_THAN, EQUAL, GREATER_THAN_OR_EQ, or LESS_THAN_OR_EQ).
+    Constructor:
+        Initializes the JoinPredicate with the field indices and the comparison operation.
+        filter() Method:
+            Applies the predicate to the two specified tuples (t1 and t2).
+            Uses the compare() method of the Field class to perform the comparison between the specified fields of the tuples.
+            Returns true if the tuples satisfy the predicate; otherwise, returns false.
+    Getter Methods:
+        getField1(): Returns the field index of the first tuple.
+        getField2(): Returns the field index of the second tuple.
+        getOperator(): Returns the comparison operation as an instance of the Predicate.Op enum.
+- Filter
+    The Filter class provides a mechanism for filtering tuples based on a specified predicate. 
+    It iterates over tuples from its child operator and applies the predicate to determine which tuples to pass through the filter. 
+    This operator is commonly used in query processing to implement the WHERE clause in SQL queries.
+    Instance Variables:
+        p: The predicate to filter tuples with, represented by an instance of the Predicate class.
+        child: An iterator used for scanning the table to be filtered, represented by an instance of the DbIterator interface.
+    Constructor:
+        Accepts a predicate (p) to apply and a child operator (child) to read tuples from.
+    Getter Methods:
+        getPredicate(): Returns the predicate used for filtering tuples.
+        getTupleDesc(): Returns the tuple descriptor of the child operator.
+    Lifecycle Methods:
+        open(): Opens the filter by opening its child operator.
+        close(): Closes the filter by closing its child operator.
+        rewind(): Rewinds the filter by rewinding its child operator.
+        fetchNext() Method:
+            Overrides the fetchNext() method inherited from AbstractDbIterator.
+            Iterates over tuples from the child operator, applying the predicate to them.
+            Returns the next tuple from the child operator that passes the filter predicate, or null if no more tuples satisfy the predicate.
+    Other Methods:
+        getChildren(): Returns an array containing the child operator.
+        setChildren(): Sets the child operator.
+- Join 
+    The Join class provides a mechanism for performing relational joins between two tables based on a specified join predicate. 
+    It iterates over tuples from both child operators and applies the join predicate to generate the joined tuples. 
+    This operator is commonly used in query processing to implement join operations in SQL queries.
+    Instance Variables:
+        p: The join predicate to use for joining the children, represented by an instance of the JoinPredicate class.
+        child1: An iterator used for scanning the left (outer) relation to be joined, represented by an instance of the DbIterator interface.
+        child2: An iterator used for scanning the right (inner) relation to be joined, also represented by an instance of the DbIterator interface.
+        joinedTd: The tuple descriptor of the joined table, which is the result of merging the tuple descriptors of child1 and child2.
+        curChild1: The tuple corresponding to the current tuple from child1, used during iteration.
+    Constructor:
+        Accepts the join predicate (p), and two child iterators (child1 and child2) representing the left and right relations to be joined.
+    Getter Methods:
+        getJoinPredicate(): Returns the join predicate used for joining.
+        getJoinField1Name(): Returns the field name of join field1 (from child1).
+        getJoinField2Name(): Returns the field name of join field2 (from child2).
+        getTupleDesc(): Returns the tuple descriptor of the joined table.
+    Lifecycle Methods:
+        open(): Opens the join by opening both child operators.
+        close(): Closes the join by closing both child operators.
+        rewind(): Rewinds both child operators.
+        fetchNext() Method:
+            Overrides the fetchNext() method inherited from AbstractDbIterator.
+            Implements a nested loops join algorithm to generate the next tuple from the join.
+            Iterates over tuples from child1, and for each tuple, iterates over tuples from child2.
+            Applies the join predicate to pairs of tuples from child1 and child2, and returns the joined tuple if the predicate is satisfied.
+            Returns null if there are no more tuples to join.
+    Other Methods:
+        getChildren(): Returns an array containing the child operators.
+        setChildren(): Sets the child operators.
+- HashEquiJoin
+    The HashEquiJoin class provides an efficient mechanism for performing equi-joins between two tables by utilizing a hash-based approach. 
+    It avoids nested loops and improves performance, especially for large datasets.
+    Instance Variables:
+        p: The join predicate to use for joining the children, represented by an instance of the JoinPredicate class.
+        child1: An iterator used for scanning the left (outer) relation to be joined, represented by an instance of the DbIterator interface.
+        child2: An iterator used for scanning the right (inner) relation to be joined, also represented by an instance of the DbIterator interface.
+        joinedTd: The tuple descriptor of the joined table, which is the result of merging the tuple descriptors of child1 and child2.
+        field2Tuples: A mapping that maps a field to the tuples in the left table whose field specified by the join predicate is the key field.
+        field2TuplesIt: An iterator of the values of field2Tuples.
+        curChild2: The tuple corresponding to the current tuple from child2, used during iteration.
+    Constructor:
+        Accepts the join predicate (p), and two child iterators (child1 and child2) representing the left and right relations to be joined.
+    Getter Methods:
+        getJoinPredicate(): Returns the join predicate used for joining.
+        getTupleDesc(): Returns the tuple descriptor of the joined table.
+        getJoinField1Name(): Returns the field name of join field1 (from child1).
+        getJoinField2Name(): Returns the field name of join field2 (from child2).
+    Lifecycle Methods:
+        open(): Opens the join by opening both child operators and initializes the hash table.
+        close(): Closes the join by closing both child operators.
+        rewind(): Rewinds both child operators.
+    FetchNext Method:
+        Overrides the fetchNext() method inherited from AbstractDbIterator.
+        Implements a hash join algorithm to generate the next tuple from the join.
+        Initializes the hash table during the open() operation.
+        Iterates over tuples from child2 and checks for matches in the hash table.
+        Returns the joined tuple if a match is found.
+        Handles cases where there are multiple tuples with the same hash value by iterating over them.
+        Returns null if there are no more tuples to join.
+    Other Methods:
+        getChildren(): Returns an array containing the child operators.
+        setChildren(): Sets the child operators.
+- IntegerAggregator
+    The IntegerAggregator class provides a flexible mechanism for computing aggregate functions over tuples, supporting both grouped and ungrouped aggregation operations. 
+    It efficiently processes tuples and generates the corresponding aggregate results according to the specified parameters.
+    Instance Variables:
+        gbfield: The 0-based index of the group-by field in the tuple, or NO_GROUPING if there is no grouping.
+        gbfieldtype: The type of the group-by field (e.g., Type.INT_TYPE), or null if there is no grouping.
+        afield: The 0-based index of the aggregate field in the tuple.
+        what: The aggregation operator specified by an instance of the Op enum.
+        groupAggregateValue: A map that stores the aggregate value for each group. When gbfield is NO_GROUPING, all tuples are considered part of a single group.
+        aggregateTd: The tuple descriptor of the aggregate result.
+    Constructor:
+        Accepts parameters defining the group-by field, the aggregate field, and the aggregation operation.
+    Initialization Methods:
+        getInitialValue(): Determines the initial value for the aggregator based on the specified aggregation operation.
+        aggregate(): Updates the aggregate value based on the new tuple's value and the aggregation operation.
+    Tuple Aggregation Method:
+        mergeTupleIntoGroup(Tuple tup): Merges a new tuple into the aggregate, computing the aggregate value based on the group-by field and the aggregate field.
+    Iterator Creation:
+        iterator(): Creates a DbIterator over the group aggregate results. Each tuple contains either the pair (groupVal, aggregateVal) if grouping is used, or a single (aggregateVal) if no grouping is specified.
+    Aggregation Logic:
+        Handles various aggregation operations such as MIN, MAX, SUM, COUNT, and AVG.
+        Computes the aggregate value for each group or for all tuples if no grouping is specified.
+    Result Representation:
+        Constructs tuples containing the group value (if applicable) and the computed aggregate value.
+        Returns a DbIterator over these tuples.
+- StringAggregator
+    The StringAggregator class provides a specialized mechanism for counting tuples in each group or across all tuples when no grouping is specified. 
+    It efficiently processes tuples and generates the corresponding aggregate results according to the specified parameters.
+    Instance Variables:
+        gbfield: The 0-based index of the group-by field in the tuple, or NO_GROUPING if there is no grouping.
+        gbfieldtype: The type of the group-by field (e.g., Type.INT_TYPE), or null if there is no grouping.
+        afield: The 0-based index of the aggregate field in the tuple.
+        groupAggregateValue: A map that stores the aggregate value for each group. When gbfield is NO_GROUPING, all tuples are considered part of a single group.
+        aggregateTd: The tuple descriptor of the aggregate result.
+    Constructor:
+        Accepts parameters defining the group-by field, the aggregate field, and the aggregation operation (COUNT in this case).
+    Tuple Aggregation Method:
+        mergeTupleIntoGroup(Tuple tup): Merges a new tuple into the aggregate, incrementing the count for each group.
+    Iterator Creation:
+        iterator(): Creates a DbIterator over the group aggregate results. Each tuple contains either the pair (groupVal, aggregateVal) if grouping is used, or a single (aggregateVal) if no grouping is specified. In this case, the aggregate value represents the count of tuples in each group.
+    Aggregation Logic:
+        Supports only the COUNT aggregation operation.
+        Increments the count for each group whenever a new tuple is merged into the aggregator.
+    Result Representation:
+        Constructs tuples containing the group value (if applicable) and the computed aggregate value (count).
+        Returns a DbIterator over these tuples.
+- Aggregate
+    The Aggregate class provides a flexible mechanism for computing various aggregate functions over a single column, with optional grouping by another column. 
+    It encapsulates the logic for performing aggregation efficiently and generates the corresponding output tuples
+    Instance Variables:
+        child: The child DbIterator providing tuples.
+        afield: The index of the column over which the aggregate is computed.
+        gfield: The index of the column over which the result is grouped, or -1 if there is no grouping.
+        aop: The aggregation operation to perform (e.g., Op.SUM, Op.AVG, Op.MAX, Op.MIN).
+        aggregator: An Aggregator object responsible for performing the aggregation.
+        aggregatorIterator: An iterator over the aggregated results.
+    Constructor:
+        Accepts parameters defining the child iterator, the aggregate field, the group-by field, and the aggregation operation.
+    Initialization:
+        open(): Opens the operator and initializes the aggregator.
+        resetAggregator(): Resets the aggregator based on the type of the aggregate field (INT_TYPE or STRING_TYPE).
+    Tuple Processing:
+        fetchNext(): Fetches the next aggregated tuple from the aggregator iterator.
+    Grouping Information:
+        groupField(): Returns the index of the group-by field.
+        groupFieldName(): Returns the name of the group-by field in the output tuples.
+        groupFieldType(): Returns the type of the group-by field in the output tuples.
+    Aggregation Information:
+        aggregateField(): Returns the index of the aggregate field.
+        aggregateFieldName(): Returns the name of the aggregate field in the output tuples.
+        aggregateOp(): Returns the aggregation operation.
+    Rewinding:
+        rewind(): Rewinds the operator and resets the aggregator.
+    Tuple Description:
+        getTupleDesc(): Returns the TupleDesc of the aggregated results.
+    Closing:
+        close(): Closes the operator and the child iterator.
+    Child Iterator Management:
+        getChildren(): Returns the child iterator.
+        setChildren(DbIterator[] children): Sets the child iterator and resets the aggregator.
+
+- HeapPage
+    The HeapPage class provides foundational functionality for managing and manipulating data at the page level, which is essential for implementing various operators in the SimpleDB system. 
+    These functionalities enable operators to interact with and modify data stored in heap files efficiently.
+    Insertion and Deletion:
+        The insertTuple and deleteTuple methods are essential for operators like Insert and Delete, which modify the contents of the page. These methods handle adding new tuples to the page and removing existing tuples from the page, respectively.
+    Tuple Iteration:
+        The iterator method provides an iterator over all tuples on the page. While not directly related to operators, it enables easy traversal of tuples for various operations, including those performed by operators like SequentialScan.
+    Tuple Representation:
+        The readNextTuple method reads tuples from the page. This functionality is crucial for operators that need to access tuple data, such as SequentialScan or IndexScan.
+    Page Serialization and Deserialization:
+        The getPageData and constructor methods are responsible for converting the page contents to byte arrays and vice versa. While this functionality is not directly related to operators, it's crucial for disk I/O operations performed by operators like Insert and Delete, which write/read pages to/from disk.
+    Header Management:
+        The methods related to managing the page header (getHeaderSize, getNumEmptySlots, isSlotUsed, markSlotUsed) are essential for tracking which slots in the page are occupied by tuples. This information is crucial for operators like Insert to determine where new tuples can be placed and for Delete to identify which tuples need to be removed.
+- HeapFile
+    The HeapFile class provides the necessary functionalities for interacting with heap files, 
+    including inserting, deleting, and iterating over tuples. 
+    These functionalities are essential for implementing various operators in the SimpleDB system, 
+    enabling efficient manipulation and retrieval of data stored in heap files.
+    Insertion and Deletion:
+        The insertTuple and deleteTuple methods are crucial for operators like Insert and Delete, which modify the contents of the file by adding or removing tuples. These methods interact directly with the HeapPage class to insert or delete tuples from the pages.
+    Page Reading and Writing:
+        The readPage and writePage methods are responsible for reading and writing pages to/from disk. These operations are fundamental for operators like SequentialScan, which need to read pages to retrieve tuples, and for Insert and Delete, which modify pages.
+    Tuple Iteration:
+        The iterator method returns a DbFileIterator, which allows iteration over all tuples in the file. This functionality is essential for operators like SequentialScan, which need to iterate over tuples in the file to retrieve them.
+    Transaction Handling:
+        Transaction-related methods (insertTuple, deleteTuple, iterator) handle transactions by acquiring and releasing locks on pages as necessary. This ensures transactional integrity when modifying or accessing tuples in the file.
+    File Management:
+        Methods like numPages, getId, and getFile provide information about the file and its contents. While not directly related to operators, this information is used by operators for various purposes, such as determining the number of pages to scan or identifying the file to operate on.
+- Insert
+    the Insert operator provides a mechanism to insert tuples from its child operator into a specified table, 
+    handling the insertion process using the BufferPool and returning a one-field tuple containing the count of inserted records.
+    Constructor: The Insert operator is initialized with the transaction ID (t), the child operator (child), and the table ID (tableId) into which the tuples will be inserted. It also initializes the TupleDesc (insertTd) for the insertion result.
+    open Method: This method opens the operator by opening its child operator. It sets the done flag to false, indicating that the insertion process has not been completed yet.
+    close Method: This method closes the operator by closing its child operator.
+    rewind Method: This method rewinds the operator by closing and then reopening it, effectively resetting its state.
+    fetchNext Method: This method performs the actual insertion of tuples into the table. It iterates over the tuples returned by the child operator, inserts each tuple into the specified table using the BufferPool, and counts the number of inserted records (cnt). It then creates a one-field tuple containing the count of inserted records and sets this value as the result. After completing the insertion process, it sets the done flag to true to indicate that the insertion has been done. If called again, it returns null, indicating that there are no more tuples to insert.
+    getChildren Method: This method returns an array containing the child operator of this operator.    
+    setChildren Method: This method sets the child operator of this operator to the specified child operator.
+- Delete
+    The Delete operator provides a mechanism to delete tuples from the table using the BufferPool, 
+    and it returns a one-field tuple containing the count of deleted records.
+    Constructor: The Delete operator is initialized with the transaction ID (t) and the child operator (child) from which tuples will be read for deletion. It also initializes the TupleDesc (deleteTd) for the deletion result.
+    getTupleDesc Method: This method returns the TupleDesc of the deletion result, which contains a single integer field representing the number of deleted records.
+    open Method: This method opens the operator by opening its child operator. It sets the done flag to false, indicating that the deletion process has not been completed yet.
+    close Method: This method closes the operator by closing its child operator.    
+    rewind Method: This method rewinds the operator by closing and then reopening it, effectively resetting its state.
+    fetchNext Method: This method performs the actual deletion of tuples from the table. It iterates over the tuples returned by the child operator, deletes each tuple from the table using the BufferPool, and counts the number of deleted records (cnt). It then creates a one-field tuple containing the count of deleted records and sets this value as the result. After completing the deletion process, it sets the done flag to true to indicate that the deletion has been done. If called again, it returns null, indicating that there are no more tuples to delete.
+    getChildren Method: This method returns an array containing the child operator of this operator.
+    setChildren Method: This method sets the child operator of this operator to the specified child operator.
+*** For page eviction policy I am using LRU. I add a timer of type long, which represents the number of reads. Each time if eviction is needed, I select a page with minimum accessed time and evict the page.
